@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+
+# prints the subset of beeminder goals that are closest to derailing
+
+use warnings;
+use strict;
+
+my $top = undef;
+my $count = 0;
+my @goals = ();
+
+for my $bmndr (split /\n/, `~/bin/bmndr`) {
+  $bmndr =~ s/^(.* (\d+) days?).*$/$1/;
+  warn "Bad line: $bmndr\n" unless defined $2;
+  $top = $2 unless defined $top;
+  print "$bmndr\n" and $count++ if ( $top == $2 );
+}
+
+#for my $bmndr (split /\n/, `~/bin/bmndr`) {
+#  $bmndr =~ /^(\w+)\s* (\d+) days?/;
+#  warn "Bad line: $bmndr\n" unless defined $2;
+#  $top = $2 unless defined $top;
+#  push( @goals, $1) and $count++ if ( $top == $2 );
+#}
+print "Count: $count\n";
+
+#for my $goal (@goals) {
+#  my $bmndr = grep {/^Bare minimum/} split( /\n/, `~/bin/bmndr $goal`);
+#  print $goal, $bmndr;
+#}
+
+# TODO for goals above, cycle through printing s/Bare minimum/$goal/ if /^Bare minimum/
+# Though that turns one api call into N+1 calls for the relevant subset N
+
