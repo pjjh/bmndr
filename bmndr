@@ -8,6 +8,7 @@ import os
 from pprint import pprint
 from textwrap import wrap
 from datetime import datetime
+from datetime import timedelta
 from time import time
 from json import loads
 try:
@@ -18,6 +19,11 @@ except ImportError:
 from sys import argv, exit
 
 config_path = os.path.join(os.path.expanduser('~'),'.bmndrrc')
+try:
+    stty_width = int(os.popen('stty size | cut -d " " -f2', 'r').read().rstrip())
+except:
+    stty_width = 80
+#print( "Using stty_width of %d\n" % stty_width )
 
 Config = configparser.ConfigParser()
 Config.read(config_path)
@@ -38,7 +44,7 @@ def ConfigSectionMap(section):
 def time_to_days(dt):
     days = dt.days
     if days == 1:
-        return '1 day'
+        return '1 day '
     else:
         return '%s days' % days
 
@@ -67,13 +73,15 @@ if len(argv) == 1:
     output = []
     for i in parsed:
         timeleft = datetime.fromtimestamp(int(i['losedate'])) - datetime.now()
-        days = time_to_days(timeleft)
-        line = [i['slug'],days,i['headsum']]
-        output.append(line)
+        if timeleft >= timedelta(0):
+            days = time_to_days(timeleft)
+            line = [i['slug'],days,i['headsum']]
+            output.append(line)
     col_width = max([len(i[0]) for i in output]) + 1
     for row in output:
         try:
-            print(''.join((row[0].ljust(col_width),row[1].ljust(9),row[2])))
+            print(wrap(''.join((row[0].ljust(col_width),row[1].rjust(9),'   ',row[2])), width=stty_width)[0])
+            #print(     ''.join((row[0].ljust(col_width),row[1].rjust(9),'   ',row[2])))
         except TypeError:
             pass
 
@@ -100,11 +108,16 @@ else:
     post = dict()
     post['auth_token'] = auth_token
     post['timestamp'] = round(time())
-    post['value'] = argv[2]
-    if len(argv)>3:
-        post['comment'] = ' '.join(argv[3:])
-    else:
-        post['comment'] = 'via bmndr at %s' % datetime.now().strftime('%X')
+    try:
+      post['value'] = float(argv[2])
+      argstart = 3
+    except ValueError, TypeError:
+      post['value'] = 1
+      argstart = 2
+    if len(argv)>argstart:
+        post['comment'] = ' '.join(argv[argstart:])
+#    else:
+#        post['comment'] = 'via bmndr at %s' % datetime.now().strftime('%X')
 
     params = urlencode(post)
     params = params.encode('utf-8')
