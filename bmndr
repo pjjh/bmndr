@@ -97,6 +97,22 @@ elif len(argv) == 2:
         print(''.join(('::: Progress on %s :::\n\n%s\nBare minimum: %s\n' % (data['title'],data['headsum'],data['limsum']),'\n'.join(wrap(data['graphsum'])),'\n\n%s\n' % data['graph_url'])))
         for i in data['datapoints'][-10:]:
             print(i['canonical'])
+        for j in reversed( data['datapoints'] ):
+            if 'reset' in j['canonical']:
+              reset_on    = datetime.fromtimestamp( j['timestamp'] )
+              reset_str   = reset_on.strftime('%Y-%m-%d')
+              days_since  = time_to_days(datetime.now() - reset_on)
+              print
+              print( 'Last reset on %s, %s ago' % (reset_str, days_since))
+              break
+
+        pledge = data['contract']['amount']
+        if data['contract']['stepdown_at'] is not None:
+          stepdown = datetime.fromtimestamp( data['contract']['stepdown_at'] )
+          print data['slug'], 'is scheduled to stepdown from', pledge, 'on', stepdown.strftime('%Y-%m-%d')
+        else:
+          print 'currently pledging', pledge 
+
     except KeyError:
         print("Oops, there seems to be no goal named '%s'!" % (goal))
         exit(1)
