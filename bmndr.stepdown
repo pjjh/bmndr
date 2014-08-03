@@ -1,0 +1,145 @@
+#!/usr/bin/python
+
+# bmndr.stepdown
+# No Arguments: prints latest derail point of your goals within N days
+# One Argument: schedules a stepdown for the specified goal
+
+# by philip@beeminder.com
+# based on a script by lydgate
+# https://github.com/pjjh/bmndr
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
+
+import os
+import calendar
+from pprint import pprint
+from textwrap import wrap
+from datetime import date
+from datetime import datetime
+from datetime import timedelta
+from time import time
+from json import loads
+try:
+    from urllib.parse import urlencode
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlencode,urlopen
+from sys import argv, exit
+
+config_path = os.path.join(os.path.expanduser('~'),'.bmndrrc')
+try:
+    stty_width = int(os.popen('stty size | cut -d " " -f2', 'r').read().rstrip())
+except:
+    stty_width = 80
+#print( "Using stty_width of %d\n" % stty_width )
+
+Config = configparser.ConfigParser()
+Config.read(config_path)
+
+def ConfigSectionMap(section):
+    dict1 = {}
+    options = Config.options(section)
+    for option in options:
+        try:
+            dict1[option] = Config.get(section, option)
+            if dict1[option] == -1:
+                DebugPrint("skip: %s" % option)
+        except:
+            print("exception on %s!" % option)
+            dict1[option] = None
+    return dict1
+
+def time_to_days(dt):
+    days = dt.days
+    if days == 1:
+        return '1 day '
+    else:
+        return '%s days' % days
+
+try:
+    auth_token = ConfigSectionMap('account')['auth_token']
+except (KeyError, configparser.NoSectionError):
+    print('Error: Missing or malformed configuration file.\n')
+    print('Please go to https://www.beeminder.com/api/v1/auth_token.json')
+    print('Then create a ~/.bmndrrc file like this:\n')
+
+    print('[account]')
+    print('auth_token: <your auth_token>')
+    exit(1)
+
+try:
+    burner = ConfigSectionMap('account')['filter']
+except (KeyError, configparser.NoSectionError):
+    burner = 'frontburner'
+
+# output for running "bmndr"
+if len(argv) == 1:
+
+    #TODO timestamp for diff_since should either be a parameter or calculated as N days before today
+    diff_since = calendar.timegm((datetime.now() - timedelta(180)).utctimetuple())
+
+    data = loads(urlopen('https://www.beeminder.com/api/v1/users/me.json?auth_token=%s&diff_since=%i' % (auth_token,diff_since)).read().decode('utf-8'))
+    goals = data['goals']
+
+    output = []
+    for goal in goals:
+        for j in reversed( goal['datapoints'] ):
+          if 'reset' in j['canonical']:
+            reset_on    = datetime.fromtimestamp( j['timestamp'] )
+            reset_since = datetime.now() - reset_on
+            days_since  = time_to_days(reset_since)
+            line = [reset_on.strftime('%Y-%m-%d'), goal['slug'], days_since, goal['contract']['amount']]
+            output.append(line)
+            break
+
+    for line in reversed(sorted(output)):
+      print line[0], '-', line[2], 'ago -', line[1]
+
+
+# output for running "bmndr <goal>"
+elif len(argv) == 2:
+    goal = argv[1]
+    canstep = True
+    try:
+        data = loads(urlopen('https://www.beeminder.com/api/v1/users/me/goals/%s.json?auth_token=%s&datapoints=false' % (goal,auth_token)).read().decode('utf-8'))
+        pledge = data['contract']['amount']
+        if pledge <= 5 :
+            print data['slug'], 'is only pledging', pledge, "and can't step down further"
+            canstep = False
+        elif data['contract']['stepdown_at'] is not None:
+            stepdown = date.fromtimestamp( data['contract']['stepdown_at'] )
+            print data['slug'], 'is already scheduled to stepdown from', pledge, ' on ', stepdown.strftime('%Y-%m-%d')
+            canstep = False
+    except:
+        print("Oops, there seems to be no goal named '%s'!" % (goal))
+        pprint(data)
+        exit(1)
+
+    if canstep is False:
+      exit(0)
+
+    try:
+        post = dict()
+        post['auth_token'] = auth_token
+        params = urlencode(post)
+        params = params.encode('utf-8')
+        data = loads(urlopen('https://www.beeminder.com/api/v1/users/me/goals/%s/stepdown.json' % goal, params).read().decode('utf-8'))
+    except:
+        print("Oops, there seems to be no goal named '%s'!" % (goal))
+        pprint(data)
+        exit(1)
+    try:
+        pledge = data['contract']['amount']
+        stepdown = date.fromtimestamp( data['contract']['stepdown_at'] )
+
+        print 'Success!'
+        print data['slug'], ' will stepdown from pledging ', pledge, ' on ', stepdown.strftime('%Y-%m-%d')
+
+    except KeyError:
+        print("Oops, there seems to be no goal named '%s'!" % (goal))
+        pprint(data)
+        exit(1)
+
