@@ -1,0 +1,102 @@
+#!/usr/bin/python
+
+# bmndr.pledges
+# No Arguments: prints current pledge for active goals
+# One Argument: prints current pledge for the specified goal
+
+# by philip@beeminder.com
+# based on a script by lydgate
+# https://github.com/pjjh/bmndr
+
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
+
+import os
+from pprint import pprint
+from textwrap import wrap
+from datetime import datetime
+from datetime import timedelta
+from time import time
+from json import loads
+try:
+    from urllib.parse import urlencode
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlencode,urlopen
+from sys import argv, exit
+
+config_path = os.path.join(os.path.expanduser('~'),'.bmndrrc')
+try:
+    stty_width = int(os.popen('stty size | cut -d " " -f2', 'r').read().rstrip())
+except:
+    stty_width = 80
+#print( "Using stty_width of %d\n" % stty_width )
+
+Config = configparser.ConfigParser()
+Config.read(config_path)
+
+def ConfigSectionMap(section):
+    dict1 = {}
+    options = Config.options(section)
+    for option in options:
+        try:
+            dict1[option] = Config.get(section, option)
+            if dict1[option] == -1:
+                DebugPrint("skip: %s" % option)
+        except:
+            print("exception on %s!" % option)
+            dict1[option] = None
+    return dict1
+
+def time_to_days(dt):
+    days = dt.days
+    if days == 1:
+        return '1 day '
+    else:
+        return '%s days' % days
+
+try:
+    auth_token = ConfigSectionMap('account')['auth_token']
+except (KeyError, configparser.NoSectionError):
+    print('Error: Missing or malformed configuration file.\n')
+    print('Please go to https://www.beeminder.com/api/v1/auth_token.json')
+    print('Then create a ~/.bmndrrc file like this:\n')
+
+    print('[account]')
+    print('auth_token: <your auth_token>')
+    exit(1)
+
+try:
+    burner = ConfigSectionMap('account')['filter']
+except (KeyError, configparser.NoSectionError):
+    burner = 'frontburner'
+
+# output for running "bmndr"
+if len(argv) == 1:
+    data = loads(urlopen('https://www.beeminder.com/api/v1/users/me/goals.json?auth_token=%s&filter=%s' % (auth_token,burner)).read().decode('utf-8'))
+
+    parsed = reversed(sorted(data,key=lambda data:abs(data['pledge'])))
+
+    for i in parsed:
+        try:
+          if datetime.now() < datetime.fromtimestamp(int(i['goaldate'])):
+            print int(i['pledge']), i['slug']
+        except TypeError:
+            pass
+
+# output for running "bmndr <goal>"
+elif len(argv) == 2:
+    goal = argv[1]
+    try:
+        data = loads(urlopen('https://www.beeminder.com/api/v1/users/me/goals/%s.json?auth_token=%s&datapoints=true' % (goal,auth_token)).read().decode('utf-8'))
+    except:
+        print("Oops, there seems to be no goal named '%s'!" % (goal))
+        exit(1)
+    try:
+      print int(data['pledge']), data['slug']
+    except KeyError:
+        print("Oops, there seems to be no goal named '%s'!" % (goal))
+        exit(1)
+
