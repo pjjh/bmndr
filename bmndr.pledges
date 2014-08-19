@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # bmndr.pledges
-# No Arguments: prints current pledge for active goals
+# No Arguments: prints current (if non-zero) pledge for active goals
 # One Argument: prints current pledge for the specified goal
 
 # by philip@beeminder.com
@@ -73,7 +73,7 @@ try:
 except (KeyError, configparser.NoSectionError):
     burner = 'frontburner'
 
-# output for running "bmndr"
+# output for running "bmndr.pledges"
 if len(argv) == 1:
     data = loads(urlopen('https://www.beeminder.com/api/v1/users/me/goals.json?auth_token=%s&filter=%s' % (auth_token,burner)).read().decode('utf-8'))
 
@@ -82,11 +82,12 @@ if len(argv) == 1:
     for i in parsed:
         try:
           if datetime.now() < datetime.fromtimestamp(int(i['goaldate'])):
-            print int(i['pledge']), i['slug']
+            if int(i['pledge']) > 0:
+              print int(i['pledge']), i['slug']
         except TypeError:
             pass
 
-# output for running "bmndr <goal>"
+# output for running "bmndr.pledges <goal>"
 elif len(argv) == 2:
     goal = argv[1]
     try:
