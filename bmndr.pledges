@@ -96,7 +96,23 @@ elif len(argv) == 2:
         print("Oops, there seems to be no goal named '%s'!" % (goal))
         exit(1)
     try:
-      print int(data['pledge']), data['slug']
+        print "Current Pledge:", int(data['pledge'])
+
+        output = []
+        for j in reversed( data['datapoints'] ):
+          if 'reset' in j['canonical']:
+            reset_on    = datetime.fromtimestamp( j['timestamp'] )
+            reset_since = datetime.now() - reset_on
+            days_since  = time_to_days(reset_since)
+            line = [reset_on.strftime('%Y-%m-%d'), days_since]
+            output.append(line)
+
+        if len(output):
+          print
+          print "Derailments:"
+          for line in reversed(sorted(output)):
+            print line[0], '-', line[1], 'ago'
+
     except KeyError:
         print("Oops, there seems to be no goal named '%s'!" % (goal))
         exit(1)
