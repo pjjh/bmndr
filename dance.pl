@@ -17,6 +17,7 @@ use Try::Tiny;
 use Data::Dumper;
 use Dancer qw(get set post warning debug status error dance params param);
 use WebService::Beeminder;
+use LWP::Protocol::https; 
 
 ## CONFIG ##
 
@@ -25,13 +26,19 @@ our $bmndr = WebService::Beeminder->new(
 		token => 'PASTE_TOKEN_HERE' 
 		);
 
+# Update this goal every time a callback is processed, undef for no action
+our $callback_audit = undef;
+
 # Dancer config
 # This is part of the URL to set on the Terrifyingly Advanced Settings tab
 # TODO There's a qr{*} way down the code that specifies the URL slug to handle
 set port     => 3000;
 set logger   => 'console';
-set log      => 'warning';
+set log      => 'warning'; # 'warning' or 'debug'
 set warnings => 1;
+
+# Set to a true value if you want to include the JSON in the Debug output
+our $debug_packet = 0; 
 
 
 # hash of code references to handle webhook callbacks 
@@ -109,6 +116,13 @@ $handler{'Checkin at Hangar Arts Trust'} = sub {
 
 post qr{.*} => sub {
 
+        print STDERR qx(date);
+
+        if ( $debug_packet ) {
+          my $pktdump = Dumper ({ params() });
+          debug("Receieved packet: $pktdump");
+        }
+
 	# If we see what could be a valid response, but it's not
 	# an 'ADD', then ignore it.
 	if( (param('action')||"") ne 'ADD') {
@@ -116,13 +130,14 @@ post qr{.*} => sub {
             return "IGNORED";
         }
 
-        #my $pktdump = Dumper ({ params() });
-        #debug("Receieved packet: $pktdump");
 
         try {
 		my $source  = param('source');
 		my $comment = param('comment');
 		debug("About to handle $source packet...");
+                if ( $callback_audit ) {
+                  $bmndr->add_datapoint( goal => $callback_audit,  value => 1,  comment => "$source" ); 
+                }
 		if ( exists $handler{$source} ) {
 			$handler{$source}->() ;
 			warning("Packet from $source handled");
