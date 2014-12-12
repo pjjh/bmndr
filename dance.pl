@@ -136,7 +136,7 @@ post qr{.*} => sub {
 		my $comment = param('comment');
 		debug("About to handle $source packet...");
                 if ( $callback_audit ) {
-                  $bmndr->add_datapoint( goal => $callback_audit,  value => 1,  comment => "$source" ); 
+                  $bmndr->add_datapoint( goal => "$callback_audit",  value => 1,  comment => "$source" ); 
                 }
 		if ( exists $handler{$source} ) {
 			$handler{$source}->() ;
