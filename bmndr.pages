@@ -24,7 +24,9 @@ my $pages = $ENV{"HOME"} . '/.pages.rc';
 
 # END OF CONFIG
 
+# TODO Canonicalise the ISBN
 # TODO Rewrite pages file, naive implementation just appends.
+# TODO Allow for mixed-case book titles
 
 sub print_help {
   $0 =~ /([^\/]+)$/; # filename now in $1
@@ -64,7 +66,75 @@ if ( -e $pages ) {
   close FILE;
 }
 
+sub isbn_book {
+  my ( $isbn, $book ) = @_;
+  print "Creating book '$book' as ISBN $isbn\n";
+  print "Press <Enter> to create, <Ctrl-C> to abort\n";
+  $_ = <STDIN>;
+  open  FILE, ">>", $books or die "Couldn't open file: $!";
+  print FILE "$isbn $book\n";
+  close FILE;
+}
+
 sub page_book {
+  my ( $page, $book ) = @_;
+  my ( $isbn, $pagecount, $oldpage );
+
+  $isbn = $books{$book} or die "no such book $book";
+
+  $oldpage = $pages{$isbn};
+
+  if ( $oldpage and $page >= $oldpage ) {
+    $pagecount = $page - $oldpage;
+    print "read $pagecount pages of $isbn\n";
+
+    my $comment = "$isbn pp$oldpage-$page of $book";
+    print "Press <Enter> to send to Beeminder, <Ctrl-C> to abort\n";
+    print "$beemuser/$beemgoal: ^ $pagecount \"$comment\"\n";
+    $_ = <STDIN>;
+
+    print "Sending to Beeminder\n";
+    beemcreate( $beemuser, $beemgoal, time(), $pagecount, $comment );
+    print "Success!\n";
+
+    print "Updating page read\n";
+    open  FILE, ">>", $pages or die "Couldn't open file: $!";
+    print FILE "$isbn $page\n";
+    close FILE;
+  }
+
+  # 'Backwards' reading
+  elsif ( $oldpage and $page < $oldpage ) {
+    print "Resetting page read from $oldpage to $page\n";
+    print "Press <Enter> to reset, <Ctrl-C> to abort\n";
+    $_ = <STDIN>;
+    open  FILE, ">>", $pages or die "Couldn't open file: $!";
+    print FILE "$isbn $page\n";
+    close FILE;
+  }
+
+  # First pagemark
+  else {
+    print "Setting page 'zero' to be $page\n";
+    print "Press <Enter> to set, <Ctrl-C> to abort\n";
+    $_ = <STDIN>;
+    open  FILE, ">>", $pages or die "Couldn't open file: $!";
+    print FILE "$isbn $page\n";
+    close FILE;
+  }
+
+}
+
+sub book {
+  my ( $book ) = @_;
+
+  my $isbn = $books{$book} or die "no such book $book";
+  print "'$book' has ISBN $isbn\n";
+
+  # FIXME This only links to the google search results, regardless of what ISBN I use
+  $isbn =~ s/[\D]//g;
+  print "https://books.google.com/books?isbn=$isbn\n";
+  
 }
 
 sub main {
@@ -73,67 +143,21 @@ sub main {
     print_help and exit 0;
   }
 
-
   $_ = join ' ', @ARGV;
   chomp;
   #print "Got: $_\n";
 
-  my ( $book, $isbn, $page, $pagecount );
 
   if ( /^(\d+) ([\w ]+)/ and $1 < 10000 ) {
-    $page = $1;
-    $book = lc $2;
-    $isbn = $books{$book} or die "no such book $book";
-
-    my $oldpage = $pages{$isbn};
-
-    if ( $oldpage and $page >= $oldpage ) {
-      $pagecount = $page - $oldpage;
-      print "read $pagecount pages of $isbn\n";
-
-      my $comment = "$isbn pp$oldpage-$page of $book";
-      print "Press <Enter> to send to Beeminder, <Ctrl-C> to abort\n";
-      print "$beemuser/$beemgoal: ^ $pagecount \"$comment\"\n";
-      $_ = <STDIN>;
-
-      print "Sending to Beeminder\n";
-      beemcreate( $beemuser, $beemgoal, time(), $pagecount, $comment );
-      print "Success!\n";
-
-      print "Updating page read\n";
-      open  FILE, ">>", $pages or die "Couldn't open file: $!";
-      print FILE "$isbn $page\n";
-      close FILE;
-    }
-
-    elsif ( $oldpage and $page < $oldpage ) {
-      print "Resetting page read from $oldpage to $page\n";
-      print "Press <Enter> to reset, <Ctrl-C> to abort\n";
-      $_ = <STDIN>;
-      open  FILE, ">>", $pages or die "Couldn't open file: $!";
-      print FILE "$isbn $page\n";
-      close FILE;
-    }
-    
-    else {
-      print "Setting page 'zero' to be $page\n";
-      print "Press <Enter> to set, <Ctrl-C> to abort\n";
-      $_ = <STDIN>;
-      open  FILE, ">>", $pages or die "Couldn't open file: $!";
-      print FILE "$isbn $page\n";
-      close FILE;
-    }
+    page_book( $1, lc $2 );
   }
 
   elsif ( /^([-0-9]+) ([\w ]+)/ ) {
-    my $isbn = $1;
-    my $book = lc $2;
-    print "Creating book '$book' as ISBN $isbn\n";
-    print "Press <Enter> to create, <Ctrl-C> to abort\n";
-    $_ = <STDIN>;
-    open  FILE, ">>", $books or die "Couldn't open file: $!";
-    print FILE "$isbn $book\n";
-    close FILE;
+    isbn_book( $1, lc $2 );
+  }
+
+  elsif ( /^([\w ]+)$/ ) {
+    book( lc $1 );
   }
 
   else {
