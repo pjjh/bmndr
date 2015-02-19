@@ -1,5 +1,16 @@
 #!/usr/bin/env perl
 
+#
+# USAGE:   bmndr.pages --help
+#
+# AUTHOR:  Philip Hellyer, www.hellyer.net
+# URL:     https://github.com/pjjh/bmndr
+# FILE:    bmndr.pages
+# LICENSE: Creative Commons BY-NC-SA
+#          http://creativecommons.org/licenses/by-nc-sa/4.0/
+#          Copyright 2015 Philip Hellyer
+#          
+
 use warnings;
 use strict;
 

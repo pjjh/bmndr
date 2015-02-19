@@ -5,12 +5,12 @@
 #        Add your own subs into %handler 
 #        Inspired by PJF's Exobrain
 #
-# AUTHOR:  Philip Hellyer 
+# AUTHOR:  Philip Hellyer, www.hellyer.net
 # URL:     https://github.com/pjjh/bmndr
 # FILE:    dance.pl
 # LICENSE: Creative Commons BY-NC-SA
 #          http://creativecommons.org/licenses/by-nc-sa/4.0/
-#          Copyright 2014 Philip Hellyer
+#          Copyright 2015 Philip Hellyer
 
 # DEPENDENCIES & LIMITATIONS
 use Try::Tiny;

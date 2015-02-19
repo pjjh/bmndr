@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
-# bmndr.pledges
-# No Arguments: prints current (if non-zero) pledge for active goals
-# One Argument: prints current pledge for the specified goal
-
-# by philip@beeminder.com
-# based on a script by lydgate
-# https://github.com/pjjh/bmndr
+# USAGE:   bmndr.pledges
+#          No Arguments: prints current (if non-zero) pledge for active goals
+#          One Argument: prints current pledge for the specified goal
+#          Based on lydgate's bmndr script
+#
+# AUTHOR:  Philip Hellyer, www.hellyer.net
+# URL:     https://github.com/pjjh/bmndr
+# FILE:    bmndr.pledges
+# LICENSED on the same terms as https://github.com/lydgate/bmndr
 
 try:
     import configparser

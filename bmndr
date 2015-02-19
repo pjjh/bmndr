@@ -1,4 +1,11 @@
 #!/usr/bin/python
+
+# USAGE: bmndr [goal] [[value] comment]
+#        Based on lydgate's bmndr script
+#        value defaults to 1 if omitted
+#
+# LICENSED on the same terms as https://github.com/lydgate/bmndr
+
 try:
     import configparser
 except ImportError:

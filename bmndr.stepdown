@@ -1,12 +1,14 @@
 #!/usr/bin/python
 
-# bmndr.stepdown
-# No Arguments: prints latest derail point of your goals within N days
-# One Argument: schedules a stepdown for the specified goal
-
-# by philip@beeminder.com
-# based on a script by lydgate
-# https://github.com/pjjh/bmndr
+# USAGE:   bmndr.stepdown
+#          No Arguments: prints latest derail point of your goals within N days
+#          One Argument: schedules a stepdown for the specified goal
+#          Based on lydgate's bmndr script
+#
+# AUTHOR:  Philip Hellyer, www.hellyer.net
+# URL:     https://github.com/pjjh/bmndr
+# FILE:    bmndr.stepdown
+# LICENSED on the same terms as https://github.com/lydgate/bmndr
 
 try:
     import configparser
