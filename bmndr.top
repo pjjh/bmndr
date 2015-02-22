@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # USAGE:   bmndr.top
 #          Prints the subset of beeminder goals that are closest to derailing
@@ -18,7 +18,7 @@ my $top = undef;
 my $count = 0;
 my @goals = ();
 
-for my $bmndr (split /\n/, `~/bin/bmndr`) {
+for my $bmndr (split /\n/, `/usr/bin/env bmndr`) {
   $bmndr =~ /(\d+) days?/ or warn "Bad line: $bmndr\n" and next;
   $top = $1 unless defined $top;
   print "$bmndr\n" and $count++ if ( $top == $1 );
