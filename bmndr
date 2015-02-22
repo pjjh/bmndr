@@ -82,7 +82,10 @@ if len(argv) == 1:
         timeleft = datetime.fromtimestamp(int(i['losedate'])) - datetime.now()
         if timeleft >= timedelta(0):
             days = time_to_days(timeleft)
-            line = [i['slug'],days,i['headsum']]
+            if days == '0 days':
+              line = [i['slug'],days,i['limsum']]
+            else:
+              line = [i['slug'],days,i['headsum']]
             output.append(line)
     col_width = max([len(i[0]) for i in output]) + 1
     for row in output:

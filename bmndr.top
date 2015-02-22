@@ -19,10 +19,9 @@ my $count = 0;
 my @goals = ();
 
 for my $bmndr (split /\n/, `~/bin/bmndr`) {
-  $bmndr =~ s/^(.* (\d+) days?).*$/$1/;
-  warn "Bad line: $bmndr\n" unless defined $2;
-  $top = $2 unless defined $top;
-  print "$bmndr\n" and $count++ if ( $top == $2 );
+  $bmndr =~ /(\d+) days?/ or warn "Bad line: $bmndr\n" and next;
+  $top = $1 unless defined $top;
+  print "$bmndr\n" and $count++ if ( $top == $1 );
 }
 
 #for my $bmndr (split /\n/, `~/bin/bmndr`) {
