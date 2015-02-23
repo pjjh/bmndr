@@ -14,11 +14,16 @@
 use warnings;
 use strict;
 
+# CONFIG
+my $BMNDR = ''; # e.g. /Users/philip/Documents/src/bmndr/bmndr
+die "FIXME: Configure bmndr.top with the path to your bmndr script\n" unless $BMNDR;
+# TODO move this into beemapi.pl and bmndrrc
+
 my $top = undef;
 my $count = 0;
 my @goals = ();
 
-for my $bmndr (split /\n/, `/usr/bin/env bmndr`) {
+for my $bmndr (split /\n/, `$BMNDR`) {
   $bmndr =~ /(\d+) days?/ or warn "Bad line: $bmndr\n" and next;
   $top = $1 unless defined $top;
   print "$bmndr\n" and $count++ if ( $top == $1 );
