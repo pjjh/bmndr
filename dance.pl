@@ -73,6 +73,25 @@ $handler{'pandf/gmailzero'} = sub {
 	debug("Added related Datapoint" );
 };
 
+# mirror selected tocks to enforce productivity at times of day
+$handler{'pjh/tocks'} = sub {
+        my $comment = param('comment');
+        my $value   = param('value');
+
+        if ( $comment =~ /(bmndr|profdev|sales|work|testtock)/ 
+             and not $comment =~ /(whoops|void)/ ) {
+                $comment =~ /\[((\d+)h)?(\d+):(\d+)s\]/ or debug( "couldn't parse time in $comment" );
+                my $hours = $2 || 0;
+                $hours += $3 / 60.0;
+                $hours += $4 / 3600.0;
+
+                $bmndr->add_datapoint( goal => 'morning',   value => $hours, comment => $comment);
+                $bmndr->add_datapoint( goal => 'afternoon', value => $hours, comment => $comment);
+                debug("Added related Datapoints" );
+        }
+};
+
+
 
 #
 # Foursquare checkins pushed by Zapier onto a single Beeminder goal, then handled here...
