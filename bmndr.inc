@@ -12,14 +12,20 @@
 #          Copyright 2015 Philip Hellyer
 
 if [ -z "$1" ] ; then
-  echo "Usage: $(/usr/bin/basename $0) goal1 [goal2 ...]"
+  echo "Usage: $(/usr/bin/basename $0) [-m 'common comment'] goal1 [goal2 ...]"
   echo "Increments each goal listed on the command line"
   exit
+fi
+
+if [ '-m' == "$1" ] ; then
+  shift
+  COMMENT="$1"
+  shift
 fi
 
 for goal in "$@" 
 do
   echo $goal:
-  bmndr $goal 1
+  bmndr $goal 1 "$COMMENT"
 done
 
