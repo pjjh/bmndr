@@ -1,0 +1,70 @@
+#!/usr/bin/env perl
+
+# USAGE:   bmndr.daily
+#          Lists and/or toggles today's daily tasks
+#          Depends on lydgate's bmndr script and its configuration
+#
+# AUTHOR:  Philip Hellyer, www.hellyer.net
+# URL:     https://github.com/pjjh/bmndr
+# FILE:    bmndr.top
+# LICENSE: Creative Commons BY-NC-SA
+#          http://creativecommons.org/licenses/by-nc-sa/4.0/
+#          Copyright 2015 Philip Hellyer
+
+our $beemuser;
+require "${path}beemapi.pl";
+
+use warnings;
+use strict;
+use POSIX qw(strftime);
+
+# CONFIG
+
+# TODO move to a config file
+my $goal = 'dailies';
+
+# END CONFIG
+
+if ( defined $ARGV[0] and $ARGV[0] eq '--help' ) {
+  $0 =~ /([^\/]+)$/;
+  print "Usage: $1 [substring] [substring]\n";
+  print "\t display today's entries in the $goal goal\n";
+  print "\t toggle values matching any substring provided\n";
+  exit 0;
+}
+
+# FIXME there's got to be a better way to fetch today's datapoints
+# daystamp '20151225' is christmas 2015
+my $todaystamp = strftime '%Y%m%d', localtime;
+#print "hello $todaystamp\n"; # will this break in january ?
+my @datapoints = grep { $_->{'daystamp'} eq $todaystamp } @{ beemfetch( $goal ) };
+
+our $args = undef;
+if ( scalar @ARGV ) {
+  # TODO build | regex
+  $args = join '|', @ARGV;
+}
+
+for my $d ( @datapoints ) {
+  # show the current state
+  print $d->{'value'}, ' ', $d->{'comment'}, "\n";
+
+  # toggle the value if specified on the command line
+  if ( $args and $d->{'comment'} =~ /$args/io ) {
+    $d->{'value'} = ( $d->{'value'} + 1 ) % 2, # 0=>1, 1=>0
+    beemupdate( 
+      $beemuser, 
+      $goal, 
+      $d->{'id'},
+      time,
+      $d->{'value'},
+      $d->{'comment'},
+    );
+    print "> toggled to $d->{'value'}\n"
+  }
+}
+
+
+
+
+

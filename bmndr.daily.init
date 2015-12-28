@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# USAGE:   bmndr.daily.init
+#          Creates a set of daily tasks for today
+#          Depends on lydgate's bmndr script and its configuration
+#
+# AUTHOR:  Philip Hellyer, www.hellyer.net
+# URL:     https://github.com/pjjh/bmndr
+# FILE:    bmndr.top
+# LICENSE: Creative Commons BY-NC-SA
+#          http://creativecommons.org/licenses/by-nc-sa/4.0/
+#          Copyright 2015 Philip Hellyer
+
+# this initialises a set of daily tasks
+
+GOAL='dailies'
+
+# add tasks to this list
+for DAILY in    \
+  "floss"       \
+  "flex"        \
+  "sweat"       \
+  "anki zero"   \
+;do
+  bmndr $GOAL 0 "$DAILY"
+done
+
+# to mark a task as completed, use bmndr.daily
+
