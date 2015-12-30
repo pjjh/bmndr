@@ -33,15 +33,37 @@ if ( defined $ARGV[0] and $ARGV[0] eq '--help' ) {
   exit 0;
 }
 
-# FIXME there's got to be a better way to fetch today's datapoints
 # daystamp '20151225' is christmas 2015
 my $todaystamp = strftime '%Y%m%d', localtime;
-#print "hello $todaystamp\n"; # will this break in january ?
-my @datapoints = grep { $_->{'daystamp'} eq $todaystamp } @{ beemfetch( $goal ) };
 
+
+# were we run already today? SNIPPET
+#system( "/usr/bin/touch -t ${todaystamp}0000 today" );
+#my $firstrun = system( "/bin/test bmndr.daily.lastrun -nt today" );
+#system( "/usr/bin/touch bmndr.daily.lastrun" );
+
+# fetch the most recent day's dailies
+print "fetching dailies...\n";
+my @datapoints = ();
+my $latestday = '20111012';
+@datapoints = 
+    sort { $a->{'comment'} cmp $b->{'comment'} }
+    grep { $_->{'daystamp'} eq $latestday }
+    grep { $_->{'daystamp'} ge $latestday and $latestday = $_->{'daystamp'} }
+    @{ beemfetch( $goal ) };
+
+# copy to today, if needed
+if ( $latestday lt $todaystamp ) {
+  print "creating dailies...\n";
+  for my $d ( @datapoints ) {
+    $d->{value} = 0;
+    $d->{id} = beemcreate( $beemuser, $goal, time, 0, $d->{'comment'} );
+  }
+}
+
+# build a regexp to match command line args
 our $args = undef;
 if ( scalar @ARGV ) {
-  # TODO build | regex
   $args = join '|', @ARGV;
 }
 
