@@ -30,10 +30,12 @@ my $goal = 'dailies';
 my $help;
 my $toggle;
 my $stats;
+my $yesterday;
 GetOptions(
-  "help"   => \$help,
-  "toggle" => \$toggle,
-  "stats"  => \$stats,
+  "help"       => \$help,
+  "toggle"     => \$toggle,
+  "stats"      => \$stats,
+  "yesterday"  => \$yesterday,
 );
 
 
@@ -42,14 +44,17 @@ if ( $help ) {
   print "Usage: $1 [substring] [substring]\n";
   print "\t display today's entries in the $goal goal\n";
   print "\t checks off items matching any substring provided\n";
+  print "\t --yesterday adjusts yesterday's items, not today's\n";
   print "\t --toggle toggles items matching any substring provided\n";
 #  print "\t --stats summarize your dailies TODO\n";
   print "\t --help this text\n";
   exit 0;
 }
 
+# delta on 'right now', back 24h if --yesterday
+my $timediff = ( $yesterday ? -86400 : 0 );
 # daystamp '20151225' is christmas 2015
-my $todaystamp = strftime '%Y%m%d', localtime;
+my $todaystamp = strftime '%Y%m%d', localtime( time + $timediff );
 
 
 # were we run already today? SNIPPET
@@ -64,7 +69,9 @@ my $latestday = '20111012';
 @datapoints = 
     sort { $a->{'comment'} cmp $b->{'comment'} }
     grep { $_->{'daystamp'} eq $latestday }
-    grep { $_->{'daystamp'} ge $latestday and $latestday = $_->{'daystamp'} }
+    grep { $_->{'daystamp'} ge $latestday and 
+           $_->{'daystamp'} le $todaystamp and 
+           $latestday = $_->{'daystamp'} }
     @{ beemfetch( $goal ) };
 
 # copy to today, if needed
@@ -72,7 +79,7 @@ if ( $latestday lt $todaystamp ) {
   print "creating dailies...\n";
   for my $d ( @datapoints ) {
     $d->{value} = 0;
-    $d->{id} = beemcreate( $beemuser, $goal, time, 0, $d->{'comment'} );
+    $d->{id} = beemcreate( $beemuser, $goal, time + $timediff, 0, $d->{'comment'} );
   }
 }
 
@@ -106,7 +113,7 @@ for my $d ( @datapoints ) {
       $beemuser, 
       $goal, 
       $d->{'id'},
-      time,
+      time + $timediff,
       $d->{'value'},
       $d->{'comment'},
     );
