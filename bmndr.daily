@@ -72,6 +72,7 @@ my $latestday = '20111012';
     grep { $_->{'daystamp'} ge $latestday and 
            $_->{'daystamp'} le $todaystamp and 
            $latestday = $_->{'daystamp'} }
+    grep { $_->{'comment'} !~ /RECOMMITTED/ }
     @{ beemfetch( $goal ) };
 
 # copy to today, if needed
@@ -98,18 +99,24 @@ for my $d ( @datapoints ) {
     print $d->{'value'}, ' ', $d->{'comment'}, "\n";
   }
   else { 
+    my $changed = 0;
     if ( $toggle ) { 
       # toggled
       print $d->{'value'}, ' ', $d->{'comment'}, "\n";
       $d->{'value'} = ( $d->{'value'} + 1 ) % 2, # 0=>1, 1=>0
-      print "> toggled to $d->{'value'}\n"
+      print "> toggled to $d->{'value'}\n";
+      $changed = 1;
     }
-    else { 
+    elsif ( not $d->{'value'} ) { 
       # just set it
       $d->{'value'} = 1;
       print 'X ', $d->{'comment'}, "\n";
+      $changed = 1;
     }
-    beemupdate( 
+    else {
+      print $d->{'value'}, ' ', $d->{'comment'}, "\n";
+    }
+    $changed and beemupdate( 
       $beemuser, 
       $goal, 
       $d->{'id'},
