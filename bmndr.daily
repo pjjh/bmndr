@@ -36,14 +36,16 @@ GetOptions(
   "toggle"     => \$toggle,
   "stats"      => \$stats,
   "yesterday"  => \$yesterday,
+  "goal=s"     => \$goal,
 );
 
 
 if ( $help ) {
   $0 =~ /([^\/]+)$/;
-  print "Usage: $1 [substring] [substring]\n";
+  print "Usage: $1 [--goal goalname] [substring]*\n";
   print "\t display today's entries in the $goal goal\n";
   print "\t checks off items matching any substring provided\n";
+  print "\t --goal specify the goal to update, default: 'dailies'\n";
   print "\t --yesterday adjusts yesterday's items, not today's\n";
   print "\t --toggle toggles items matching any substring provided\n";
 #  print "\t --stats summarize your dailies TODO\n";
