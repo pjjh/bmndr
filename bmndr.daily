@@ -49,19 +49,22 @@ GetOptions(
 
 if ( $help ) {
   $0 =~ /([^\/]+)$/;
-  print "Usage: $1 [--goal goalname] [substring]*\n";
-  print "       $1 [--goal goalname] --add [--toggle] description\n";
-  print "       $1 [--goal goalname] --delete [substring]\n";
-  print "\t display today's entries in the $goal goal\n";
+  print "Usage: \t $1 [--goal goalname] [substring]*\n";
+  print "       \t $1 [--goal goalname] --add [--toggle] description\n";
+  print "       \t $1 [--goal goalname] --delete [substring]\n";
+  print "\n";
+  print "\t display today's entries in the '$goal' goal\n";
   print "\t checks off items matching any substring provided\n";
-  print "\t --goal specify the goal to update, default: 'dailies'\n";
-  print "\t --add create a new daily item and check it off\n";
-  print "\t --delete all items that match the substring\n";
+  print "\n";
+  print "Options:\n";
+  print "\t --add       create a new daily item and check it off\n";
+  print "\t --delete    all items that match the substring\n";
+  print "\t --goal      specify the goal to update, default: '$goal'\n";
+  print "\t --toggle    toggles items matching any substring provided\n";
+  print "\t --test      displays output, but doesn't update Beeminder\n";
   print "\t --yesterday adjusts yesterday's items, not today's\n";
-  print "\t --toggle toggles items matching any substring provided\n";
-  print "\t --test prints as normal, but doesn't update Beeminder\n";
 #  print "\t --stats summarize your dailies TODO\n";
-  print "\t --help this text\n";
+  print "\t --help      displays this text\n";
   exit 0;
 }
 
