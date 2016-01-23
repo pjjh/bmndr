@@ -57,14 +57,14 @@ if ( $help ) {
   print "\t checks off items matching any substring provided\n";
   print "\n";
   print "Options:\n";
-  print "\t --add       create a new daily item and check it off\n";
-  print "\t --delete    all items that match the substring\n";
-  print "\t --goal      specify the goal to update, default: '$goal'\n";
-  print "\t --toggle    toggles items matching any substring provided\n";
-  print "\t --test      displays output, but doesn't update Beeminder\n";
-  print "\t --yesterday adjusts yesterday's items, not today's\n";
-#  print "\t --stats summarize your dailies TODO\n";
-  print "\t --help      displays this text\n";
+  print "\t --add       \t create a new daily item and check it off\n";
+  print "\t --delete    \t deletes all items that match the substring\n";
+  print "\t --goal      \t specify the goal to update, default: '$goal'\n";
+#  print "\t --stats     \t summarize your dailies TODO\n";
+  print "\t --toggle    \t toggles items matching any substring provided\n";
+  print "\t --test      \t displays output, but doesn't update Beeminder\n";
+  print "\t --yesterday \t adjusts yesterday's items, not today's\n";
+  print "\t --help      \t displays this text\n";
   exit 0;
 }
 
@@ -89,7 +89,7 @@ my $latestday = '20111012';
     grep { $_->{'daystamp'} ge $latestday and 
            $_->{'daystamp'} le $todaystamp and 
            $latestday = $_->{'daystamp'} }
-    grep { $_->{'comment'} !~ /RECOMMITTED/ }
+    grep { $_->{'comment'} !~ /RE(COMMITT|START)ED/ }
     @{ beemfetch( $goal ) };
 
 # copy to today, if needed
