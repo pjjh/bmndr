@@ -27,27 +27,39 @@ my $goal = 'dailies';
 # END CONFIG
 #
 
+my $add;
+my $delete;
 my $help;
-my $toggle;
 my $stats;
+my $test;
+my $toggle;
 my $yesterday;
+
 GetOptions(
-  "help"       => \$help,
-  "toggle"     => \$toggle,
-  "stats"      => \$stats,
-  "yesterday"  => \$yesterday,
+  "add"        => \$add,
+  "delete"     => \$delete,
   "goal=s"     => \$goal,
+  "help"       => \$help,
+  "stats"      => \$stats,
+  "test"       => \$test,
+  "toggle"     => \$toggle,
+  "yesterday"  => \$yesterday,
 );
 
 
 if ( $help ) {
   $0 =~ /([^\/]+)$/;
   print "Usage: $1 [--goal goalname] [substring]*\n";
+  print "       $1 [--goal goalname] --add [--toggle] description\n";
+  print "       $1 [--goal goalname] --delete [substring]\n";
   print "\t display today's entries in the $goal goal\n";
   print "\t checks off items matching any substring provided\n";
   print "\t --goal specify the goal to update, default: 'dailies'\n";
+  print "\t --add create a new daily item and check it off\n";
+  print "\t --delete all items that match the substring\n";
   print "\t --yesterday adjusts yesterday's items, not today's\n";
   print "\t --toggle toggles items matching any substring provided\n";
+  print "\t --test prints as normal, but doesn't update Beeminder\n";
 #  print "\t --stats summarize your dailies TODO\n";
   print "\t --help this text\n";
   exit 0;
@@ -82,7 +94,7 @@ if ( $latestday lt $todaystamp ) {
   print "creating dailies...\n";
   for my $d ( @datapoints ) {
     $d->{value} = 0;
-    $d->{id} = beemcreate( $beemuser, $goal, time + $timediff, 0, $d->{'comment'} );
+    $d->{id} = beemcreate( $beemuser, $goal, time + $timediff, $d->{'value'}, $d->{'comment'} ) unless $test;
   }
 }
 
@@ -91,9 +103,29 @@ if ( $latestday lt $todaystamp ) {
 # build a regexp to match command line args
 our $args = undef;
 if ( scalar @ARGV ) {
-  $args = join '|', @ARGV;
+  my $separator = '|';          # default to alternating
+  $separator = ' ' if $add;     # but we want spaces if adding
+  $args = join $separator, @ARGV;
 }
 
+# add the new datapoint
+if ( $add ) {
+  my %d = ( 
+    daystamp => $todaystamp,
+    comment  => $args,
+    value    => ( $toggle ? 0 : 1 ),  # default to checked, unless $toggle
+  );
+
+  print "creating new daily '$d{'comment'}'\n";
+  $d{id} = beemcreate( $beemuser, $goal, time + $timediff, $d{'value'}, $d{'comment'} ) unless $test;
+
+  # include it in the list
+  @datapoints = sort { $a->{'comment'} cmp $b->{'comment'} } @datapoints, \%d;
+  $args = undef;
+}
+
+
+my @delete_these = ();
 for my $d ( @datapoints ) {
 
   # not specified on the command line
@@ -102,7 +134,11 @@ for my $d ( @datapoints ) {
   }
   else { 
     my $changed = 0;
-    if ( $toggle ) { 
+    if ( $delete ) { 
+      print 'X ', $d->{'comment'}, "\n";
+      push @delete_these, $d;
+    }
+    elsif ( $toggle ) { 
       # toggled
       print $d->{'value'}, ' ', $d->{'comment'}, "\n";
       $d->{'value'} = ( $d->{'value'} + 1 ) % 2, # 0=>1, 1=>0
@@ -112,7 +148,7 @@ for my $d ( @datapoints ) {
     elsif ( not $d->{'value'} ) { 
       # just set it
       $d->{'value'} = 1;
-      print 'X ', $d->{'comment'}, "\n";
+      print '1 ', $d->{'comment'}, "\n";
       $changed = 1;
     }
     else {
@@ -125,9 +161,20 @@ for my $d ( @datapoints ) {
       time + $timediff,
       $d->{'value'},
       $d->{'comment'},
-    );
+    ) unless $test;
   }
 }
+
+
+if ( scalar @delete_these ) {
+  print "\nabout to delete the X'd items. <Ctrl-C> to abort.\n";
+  <STDIN>;
+  for my $d ( @delete_these ) {
+    beemdelete( $beemuser, $goal, $d->{id} ) unless $test;
+    print "deleted '$d->{comment}'\n";
+  }
+}
+
 
 
 
