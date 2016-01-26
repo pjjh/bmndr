@@ -28,6 +28,7 @@ my $goal = 'dailies';
 #
 
 my $add;
+my $all;
 my $delete;
 my $help;
 my $stats;
@@ -37,6 +38,7 @@ my $yesterday;
 
 GetOptions(
   "add"        => \$add,
+  "all"        => \$all,
   "delete"     => \$delete,
   "goal=s"     => \$goal,
   "help"       => \$help,
@@ -58,13 +60,14 @@ if ( $help ) {
   print "\n";
   print "Options:\n";
   print "\t --add       \t create a new daily item and check it off\n";
+  print "\t --all       \t check off all the items on the list\n";
   print "\t --delete    \t deletes all items that match the substring\n";
   print "\t --goal      \t specify the goal to update, default: '$goal'\n";
-#  print "\t --stats     \t summarize your dailies TODO\n";
-  print "\t --toggle    \t toggles items matching any substring provided\n";
-  print "\t --test      \t displays output, but doesn't update Beeminder\n";
-  print "\t --yesterday \t adjusts yesterday's items, not today's\n";
   print "\t --help      \t displays this text\n";
+#  print "\t --stats     \t summarize your dailies TODO\n";
+  print "\t --test      \t displays output, but doesn't update Beeminder\n";
+  print "\t --toggle    \t toggles items matching any substring provided\n";
+  print "\t --yesterday \t adjusts yesterday's items, not today's\n";
   exit 0;
 }
 
@@ -80,7 +83,7 @@ my $todaystamp = strftime '%Y%m%d', localtime( time + $timediff );
 #system( "/usr/bin/touch bmndr.daily.lastrun" );
 
 # fetch the most recent day's dailies
-print "fetching dailies...\n";
+print 'fetching' . ($goal ne 'dailies' ? " $goal " : ' ' ) . "dailies...\n";
 my @datapoints = ();
 my $latestday = '20111012';
 @datapoints = 
@@ -131,12 +134,9 @@ if ( $add ) {
 my @delete_these = ();
 for my $d ( @datapoints ) {
 
-  # not specified on the command line
-  if ( not $args or $d->{'comment'} !~ /$args/io ) {
-    print $d->{'value'}, ' ', $d->{'comment'}, "\n";
-  }
-  else { 
-    my $changed = 0;
+  my $changed = 0;
+  if ( $all or $args and $d->{'comment'} =~ /$args/io ) {
+
     if ( $delete ) { 
       print 'X ', $d->{'comment'}, "\n";
       push @delete_these, $d;
@@ -154,10 +154,10 @@ for my $d ( @datapoints ) {
       print '1 ', $d->{'comment'}, "\n";
       $changed = 1;
     }
-    else {
-      print $d->{'value'}, ' ', $d->{'comment'}, "\n";
-    }
-    $changed and beemupdate( 
+  }
+
+  if ( $changed ) {
+    beemupdate( 
       $beemuser, 
       $goal, 
       $d->{'id'},
@@ -165,6 +165,9 @@ for my $d ( @datapoints ) {
       $d->{'value'},
       $d->{'comment'},
     ) unless $test;
+  }
+  else {
+    print $d->{'value'}, ' ', $d->{'comment'}, "\n";
   }
 }
 
