@@ -82,6 +82,16 @@ my $todaystamp = strftime '%Y%m%d', localtime( time + $timediff );
 #my $firstrun = system( "/bin/test bmndr.daily.lastrun -nt today" );
 #system( "/usr/bin/touch bmndr.daily.lastrun" );
 
+
+# build a regexp to match command line args
+our $args = undef;
+if ( scalar @ARGV ) {
+  my $separator = '|';          # default to alternating
+  $separator = ' ' if $add;     # but we want spaces if adding
+  $args = join $separator, @ARGV;
+}
+
+
 # fetch the most recent day's dailies
 print 'fetching' . ($goal ne 'dailies' ? " $goal " : ' ' ) . "dailies...\n";
 my @datapoints = ();
@@ -95,24 +105,18 @@ my $latestday = '20111012';
     grep { $_->{'comment'} !~ /RE(COMMITT|START)ED/ }
     @{ beemfetch( $goal ) };
 
+
 # copy to today, if needed
 if ( $latestday lt $todaystamp ) {
   print "creating dailies...\n";
   for my $d ( @datapoints ) {
-    $d->{value} = 0;
+    $d->{value} = ( $all or $args and $d->{'comment'} =~ /$args/io ? 1 : 0 );
     $d->{id} = beemcreate( $beemuser, $goal, time + $timediff, $d->{'value'}, $d->{'comment'} ) unless $test;
   }
 }
 
 
 
-# build a regexp to match command line args
-our $args = undef;
-if ( scalar @ARGV ) {
-  my $separator = '|';          # default to alternating
-  $separator = ' ' if $add;     # but we want spaces if adding
-  $args = join $separator, @ARGV;
-}
 
 # add the new datapoint
 if ( $add ) {
