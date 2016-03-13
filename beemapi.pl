@@ -13,9 +13,6 @@ use HTTP::Request::Common;  # pjf recomends cpanmin.us
 use Data::Dumper; $Data::Dumper::Terse = 1;
 $beembase = 'https://www.beeminder.com/api/v1/';
 
-our $bmndrrc = undef;
-our $beemuser = undef;
-
 if ( not $beemauth or $beemauth eq 'abc123' ) {
   if ( -f "$ENV{HOME}/.bmndrrc" ) {
     require Config::Tiny or die "Config::Tiny not installed\n";
@@ -58,6 +55,41 @@ sub beemfetch { my($u, $g) = @_;
   beemerr('GET', $uri, {}, $resp);
   return decode_json($resp->content);
 }
+
+# bizzare implementation because datapoints.json doesn't respect datapoints_count
+sub beemfetchcount {
+  my ( $u, $g, $n ) = @_;
+
+  my $ua = LWP::UserAgent->new;
+  #$ua->timeout(30); # give up if no response for this many seconds; default 180
+  my $uri = $beembase .
+            "users/$u/goals/$g.json?auth_token=$beemauth&datapoints=true&datapoints_count=$n";
+  my $resp = $ua->get($uri);
+  beemerr('GET', $uri, {}, $resp);
+
+  my $results = decode_json($resp->content);
+
+  return $results->{datapoints};
+}
+
+# bizzare implementation because datapoints.json doesn't respect diff_since
+sub beemfetchsince {
+  my ( $u, $g, $t ) = @_;
+
+  my $ua = LWP::UserAgent->new;
+  #$ua->timeout(30); # give up if no response for this many seconds; default 180
+  my $uri = $beembase .
+            "users/$u/goals/$g.json?auth_token=$beemauth&diff_since=$t&datapoints=true";
+  my $resp = $ua->get($uri);
+  beemerr('GET', $uri, {}, $resp);
+
+  my $results = decode_json($resp->content);
+
+  return $results->{datapoints};
+}
+
+
+
 
 # Create a new datapoint {timestamp t, value v, comment c} for bmndr.com/u/g
 # and return the id of the new datapoint.
