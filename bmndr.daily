@@ -23,6 +23,7 @@ use Getopt::Long;
 
 # TODO move to a config file
 my $goal = 'dailies';
+my $max_fetch = 15;
 
 # END CONFIG
 #
@@ -71,8 +72,13 @@ if ( $help ) {
   exit 0;
 }
 
+# stats
+my $number_completed = 0;
+
+my $seconds_per_day = 86400;
+
 # delta on 'right now', back 24h if --yesterday
-my $timediff = ( $yesterday ? -86400 : 0 );
+my $timediff = ( $yesterday ? -$seconds_per_day : 0 );
 # daystamp '20151225' is christmas 2015
 my $todaystamp = strftime '%Y%m%d', localtime( time + $timediff );
 
@@ -103,14 +109,15 @@ my $latestday = '20111012';
            $_->{'daystamp'} le $todaystamp and 
            $latestday = $_->{'daystamp'} }
     grep { $_->{'comment'} !~ /RE(COMMITT|START)ED/ }
-    @{ beemfetch( $goal ) };
+    @{ beemfetchcount( $beemuser, $goal, $max_fetch ) }; 
+    #@{ beemfetchsince( $beemuser, $goal, time - 8 * $seconds_per_day ) }; 
 
 
 # copy to today, if needed
 if ( $latestday lt $todaystamp ) {
   print "creating dailies...\n";
   for my $d ( @datapoints ) {
-    $d->{value} = ( $all or $args and $d->{'comment'} =~ /$args/io ? 1 : 0 );
+    $d->{value} = (( $all or $args and $d->{'comment'} =~ /$args/io ) ? 1 : 0 );
     $d->{id} = beemcreate( $beemuser, $goal, time + $timediff, $d->{'value'}, $d->{'comment'} ) unless $test;
   }
 }
@@ -132,6 +139,10 @@ if ( $add ) {
   # include it in the list
   @datapoints = sort { $a->{'comment'} cmp $b->{'comment'} } @datapoints, \%d;
   $args = undef;
+}
+
+if ( scalar @datapoints >= $max_fetch ) {
+  print "WARNING: config is set to only allow $max_fetch dailies per goal\n";
 }
 
 
@@ -173,7 +184,16 @@ for my $d ( @datapoints ) {
   else {
     print $d->{'value'}, ' ', $d->{'comment'}, "\n";
   }
+  $number_completed += $d->{'value'};
 }
+
+my $count = scalar @datapoints;
+
+my $percent_completed = int ( 100 * $number_completed / $count );
+
+print "\n$number_completed / $count = $percent_completed%\n";
+
+
 
 
 if ( scalar @delete_these ) {
