@@ -23,7 +23,7 @@ use Getopt::Long;
 
 # TODO move to a config file
 my $goal = 'dailies';
-my $max_fetch = 15;
+my $max_fetch = 20;
 
 # END CONFIG
 #
@@ -83,6 +83,8 @@ my $timediff = ( $yesterday ? -$seconds_per_day : 0 );
 my $todaystamp = strftime '%Y%m%d', localtime( time + $timediff );
 
 
+$max_fetch *= 2 if $yesterday;
+
 # were we run already today? SNIPPET
 #system( "/usr/bin/touch -t ${todaystamp}0000 today" );
 #my $firstrun = system( "/bin/test bmndr.daily.lastrun -nt today" );
@@ -141,9 +143,6 @@ if ( $add ) {
   $args = undef;
 }
 
-if ( scalar @datapoints >= $max_fetch ) {
-  print "WARNING: config is set to only allow $max_fetch dailies per goal\n";
-}
 
 
 my @delete_these = ();
@@ -193,7 +192,9 @@ my $percent_completed = int ( 100 * $number_completed / $count );
 
 print "\n$number_completed / $count = $percent_completed%\n";
 
-
+if ( $count >= $max_fetch ) {
+  print "\nWARNING: config is set to only allow $max_fetch dailies per goal\n";
+}
 
 
 if ( scalar @delete_these ) {
