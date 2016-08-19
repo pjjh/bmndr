@@ -23,7 +23,7 @@ use Getopt::Long;
 
 # TODO move to a config file
 my $goal = 'dailies';
-my $max_fetch = 20;
+my $max_fetch = 50;
 
 # END CONFIG
 #
@@ -118,10 +118,21 @@ my $latestday = '20111012';
 # copy to today, if needed
 if ( $latestday lt $todaystamp ) {
   print "creating dailies...\n";
+  my $timestamp = time + $timediff;
   for my $d ( @datapoints ) {
     $d->{value} = (( $all or $args and $d->{'comment'} =~ /$args/io ) ? 1 : 0 );
-    $d->{id} = beemcreate( $beemuser, $goal, time + $timediff, $d->{'value'}, $d->{'comment'} ) unless $test;
+    $d->{timestamp} = $timestamp;
+    $d->{id} = beemcreate( $beemuser, $goal, $d->{timestamp}, $d->{'value'}, $d->{'comment'} ) unless $test;
   }
+
+  # strip extraneous
+#  @datapoints = map { {
+#                      comment   => $_->{comment},
+#                      timestamp => $_->{timestamp},
+#                      value     => $_->{value},
+#                      }
+#                    } @datapoints;
+#  @datapoints = beemcreateall( $beemuser, $goal, @datapoints ) unless $test;
 }
 
 
@@ -181,6 +192,7 @@ for my $d ( @datapoints ) {
     ) unless $test;
   }
   else {
+    # FIXME this also prints X'd items
     print $d->{'value'}, ' ', $d->{'comment'}, "\n";
   }
   $number_completed += $d->{'value'};
