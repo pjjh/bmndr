@@ -90,6 +90,25 @@ sub beemfetchsince {
 
 
 
+# create new datapoints
+# params: user, goal, dp_hashref_1, dp_hashref_2, ... 
+# returns the new datapoints as a list of hashrefs
+sub beemcreateall { 
+  my $u = shift @_;
+  my $g = shift @_;
+
+  my $ua = LWP::UserAgent->new;
+  my $uri = $beembase."users/$u/goals/$g/datapoints/create_all.json?auth_token=$beemauth";
+  my $data = \@_;
+  print Dumper $data;
+  my $resp = $ua->post($uri, Content => $data);
+  beemerr('POST', $uri, $data, $resp);
+  my $x = decode_json($resp->content);
+  print Dumper $x;
+  return @$x;
+}
+
+
 
 # Create a new datapoint {timestamp t, value v, comment c} for bmndr.com/u/g
 # and return the id of the new datapoint.
@@ -122,6 +141,20 @@ sub beemupdate { my($u, $g, $id, $t, $v, $c) = @_;
   my $resp = $ua->request($req);
   beemerr('PUT', $uri, $data, $resp);
 }
+
+
+
+# Fetch this goal object
+sub beemgoalfetch { my($u,$g) = @_;
+  my $ua = LWP::UserAgent->new;
+  #$ua->timeout(30); # give up if no response for this many seconds; default 180
+  my $uri = $beembase .
+            "users/$u/geals/$g.json?auth_token=$beemauth";
+  my $resp = $ua->get($uri);
+  beemerr('GET', $uri, {}, $resp);
+  return decode_json($resp->content);
+}
+
 
 
 # Fetch all the goals for beeminder.com/u
