@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# sets or marks as done the must-do task of the day
+
+if [ -z "$1" -o '--help' == "$1" ] ; then
+  echo 'Usage: mustdo [--done] [task description]'
+elif [ '--done' == "$1" ] ; then
+  # TODO random congratulatory lines 
+  bmndr mustdo 1 "Well done you. What's next?"
+else
+  bmndr mustdo 0 "$@"
+fi
